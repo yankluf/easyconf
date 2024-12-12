@@ -1,6 +1,9 @@
-import toml
 import argparse
+import toml
+from collections import defaultdict
 from pathlib import Path, PurePath
+
+CONFIG_FILENAME='config.toml'
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -17,17 +20,18 @@ def parse_arguments():
 class App():
     def __init__(self, args):
         self.file = args.file or self.safe_filepath()
-        self.config = self.read_config()
+        self.config = defaultdict(self.read_config)
 
 
     def safe_filepath(self):
         config_dir = Path.home() / '.config'
         config_dir.mkdir(parents=True, exist_ok=True)
-        path = PurePath(config_dir, 'vars.toml')
-        return path
-
-    def detect_tables(self, key_arg):
-        key_arg.split('.')
+        file_path = config_dir / CONFIG_FILENAME
+        file_path.touch(exist_ok=True)
+        return PurePath(file_path)
+        
+    def calc_sections(self, key_arg):
+        return key_arg.split('.')
 
     def read_config(self):
         with open(self.file, 'r') as f:
@@ -35,12 +39,22 @@ class App():
         return config
 
     def update_config(self):
-        args.key
-
+        sections = self.calc_sections(args.key)
+        if len(sections) == 1:
+            self.config[sections[0]] = args.value
+        else:
+            func = f'self.config'
+            for section in sections:
+                func = func + f'["{section}"]'
+            exec(f'{func} = "{args.value}"')
     
-
+    def write_config(self):
+        with open(self.file, 'w') as f:
+            toml.dump(self.config, f)
 
 if __name__ == "__main__":
     args = parse_arguments()
     app = App(args)
-    print(app.file)
+    app.update_config()
+    app.write_config()
+    print(app.config)
