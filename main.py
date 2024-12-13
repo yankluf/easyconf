@@ -41,7 +41,7 @@ class App():
     def update_config(self):
         sections = self.calc_sections(args.key)
         if len(sections) == 1:
-            self.config[sections[0]] = args.value
+            self.config[args.key] = args.value
         else:
             func = f'self.config'
             for section in sections:
